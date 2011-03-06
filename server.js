@@ -41,7 +41,7 @@ var settings = {
     stross: {host: 'stross.freenode.net'}
   },
   prefix: "ircmon_",
-  realname: "Blame PyroPeter, http://keks.upful.org/webzeug/ircmon/",
+  realname: "Blame PyroPeter, https://github.com/pyropeter/ircmon",
   wait:        1000 *  8,
   timeout:     1000 *  30,
   downtimeout: 1000 * 600,
