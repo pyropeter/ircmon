@@ -12,12 +12,12 @@ var settings = {
     
     // === eu
     kornbluth: {host: 'kornbluth.freenode.net'},
-    //orwell: {host: 'orwell.freenode.net'},
+    orwell: {host: 'orwell.freenode.net'}, // not linked
     calvino: {host: 'calvino.freenode.net'},
-    //gibson: {host: 'gibson.freenode.net'},
+    gibson: {host: 'gibson.freenode.net'}, // not linked
     leguin: {host: 'leguin.freenode.net'},
-    //lem: {host: 'lem.freenode.net'},
-    //wolfe: {host: 'wolfe.freenode.net'},
+    lem: {host: 'lem.freenode.net'}, // not linked
+    wolfe: {host: 'wolfe.freenode.net'}, // not linked
     sendak: {host: 'sendak.freenode.net'},
     jordan: {host: 'jordan.freenode.net'},
     lindbohm: {host: 'lindbohm.freenode.net'},
@@ -32,7 +32,7 @@ var settings = {
     zelazny: {host: 'zelazny.freenode.net'},
     brown: {host: 'brown.freenode.net'},
     anthony: {host: 'anthony.freenode.net'},
-    //kubrick: {host: 'kubrick.freenode.net'},
+    kubrick: {host: 'kubrick.freenode.net'}, // not linked
     verne: {host: 'verne.freenode.net'},
     clarke: {host: 'clarke.freenode.net'},
     card: {host: 'card.freenode.net'},
