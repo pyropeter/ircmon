@@ -2,6 +2,8 @@ var util = require('util');
 var repl = require('repl');
 var net = require('net');
 var crypto = require('crypto');
+var fs = require('fs');
+var path = require('path');
 
 var settings = {
   servers: {
@@ -290,24 +292,68 @@ function getStats() {
 }
 
 var httpserver = net.createServer(function (client) {
-  client.setTimeout(60);
+  client.setTimeout(10000);
   client.on('timeout', function () {
     client.destroy();
   });
   client.on('error', function (e) {});
+  client.setEncoding("ascii");
 
-  var data = new Buffer(JSON.stringify(getStats()));
-  try {
-    client.write("HTTP/1.1 200 OK\r\n");
-    client.write("Content-Type: text/json\r\n");
-    client.write("Content-Length: " + data.length + "\r\n");
-    client.write("\r\n");
-    client.write(data);
-    client.end();
-  } catch (e) {
-    util.log("Error caught in httpserver");
-    client.destroy();
-  }
+  client.once('data', function (chunk) {
+    var request = chunk.match(/^GET \/([-a-zA-Z0-9_.]*)(\?[^ ]*)? .*/);
+    if (request) {
+      if (request[1] == "data.json") {
+        var data = new Buffer(JSON.stringify(getStats()));
+        try {
+          client.write("HTTP/1.1 200 OK\r\n");
+          client.write("Content-Type: text/json\r\n");
+          client.write("Content-Length: " + data.length + "\r\n");
+          client.write("\r\n");
+          client.end(data);
+        } catch (e) {
+          util.log("Error caught in httpserver");
+          client.destroy();
+        }
+      } else {
+        var filename = request[1] || "index.html";
+        var mimes = {
+          html: "text/html",
+          js:   "text/javascript",
+          json: "text/json",
+          css:  "text/css"};
+        var mime = mimes[filename.replace(/.*\./,"")] || "text/plain";
+
+        fs.readFile(path.join("www", filename), function (err, data) {
+          if (!err) {
+            try {
+              client.write("HTTP/1.1 200 OK\r\n");
+              client.write("Content-Type: " + mime + "\r\n");
+              client.write("Content-Length: " + data.length + "\r\n");
+              client.write("\r\n");
+              client.end(data);
+            } catch (e) {
+              util.log("Error caught in httpserver");
+              client.destroy();
+            }
+          } else {
+            try {
+              client.end("HTTP/1.1 404 Not Found\r\n\r\n");
+            } catch (e) {
+              util.log("Error caught in httpserver");
+              client.destroy();
+            }
+          }
+        });
+      }
+    } else {
+      try {
+        client.end("HTTP/1.1 500 Bad Request\r\n\r\n");
+      } catch (e) {
+        util.log("Error caught in httpserver");
+        client.destroy();
+      }
+    }
+  });
 });
 //httpserver.listen(50080, "::1");
 httpserver.listen(50005, "localhost");

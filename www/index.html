@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <title>Freenode network status</title>
-    <script type="text/javascript" src="/static/jquery-1.4.1.js"></script>
+    <script type="text/javascript" src="http://keks.upful.org/static/jquery-1.4.1.js"></script>
     <style>
       body {
         margin:0 0 0 0;
@@ -59,12 +59,12 @@
       function getData() {
         function onerror(req, errmsg, err) {
           if (errmsg == "timeout") {
-            fetchtimeout = setTimeout(getData, 3000);
+            fetchtimeout = setTimeout(getData, 10000);
           } else
             console.log("error: " + errmsg);
         }
         $.ajax({
-          url: "data.js",
+          url: "data.json",
           dataType: "json",
           timeout: 5000,
           cache: false,
@@ -76,7 +76,7 @@
                 filter();
                 //draw();
               }
-              fetchtimeout = setTimeout(getData, 600);
+              fetchtimeout = setTimeout(getData, 2000);
             }
         });
       }
@@ -84,7 +84,7 @@
       //setInterval(getData, 1000);
       //getData();
       
-      var drawinterval = setInterval(draw, 400);
+      var drawinterval = setInterval(draw, 500);
       
       function filter() {
         var serverid, peerid, server, peer, linkid, lag;

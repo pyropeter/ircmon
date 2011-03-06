@@ -16,17 +16,6 @@ Installation
 
 1. $ node server.js
 
-2. put client.html somewhere in your httpd's htdocs directory
-
-3. make sure your httpd redirects requests to data.js in the same directory to
-   localhost:50005.
-
-   With lighttpd:
-     $HTTP["url"] =~ "^/webzeug/ircmon/data.js" {
-       proxy-core.protocol = "http"
-       proxy-core.backends = ( "127.0.0.1:50005" )
-     }
-
-4. Open client.html in your browser
+2. Open http://localhost:50005/ in your browser
 
 
