@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Freenode network status</title>
+    <script type="text/javascript" src="/static/jquery-1.4.1.js"></script>
+    <style>
+      body {
+        margin:0 0 0 0;
+        padding:5px 5px 5px 5px;
+      }
+      #canvas {
+        border:1px solid black;
+        background-color:#fff;
+        margin:0 0 0 0;
+      }
+      .hidden {
+        display:none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Freenode network status</title>
+    <h3>An inofficial netsplit-monitoring system</h3>
+    <canvas id="canvas" width="700" height="500">
+      You dont can haz canvas!
+    </canvas>
+    <h3>Legend</h3>
+    Each circle corresponds to one of freenode's IRCds.
+    <ul>
+      <li><em>Green:</em> ircmon is currently connected to that server</li>
+      <li><em>Yellow:</em> ircmon tries to establish a connection to that server or an error or timeout occured (reconnection will happen soon).</li>
+      <li><em>Red:</em> the server seems to be down (no DNS-entry, not route, connection refused, connect() times out)</li>
+    </ul>
+    Each edge represents the time between dispatch and reception of an irc-message (ircmon sends the message using one of the opened connections and addresses it to another open connection).<br>
+    The measured time ("lag") controls both length and color of the edge in question. Edge lengths grow with the lag. The color ranges from green (0ms) over yellow (500ms) to red (2s and above).
+    <script>
+      try {
+        console;
+      } catch (e) {
+        console = {};
+      }
+      if (!console.log) console.log = function () {};
+      
+      var canvas = $('#canvas')[0];
+      var context = canvas.getContext('2d');
+
+      var data = {time: 0, servers: {}};
+
+      function getData() {
+        function onerror(req, errmsg, err) {
+          if (errmsg == "timeout") {
+            fetchtimeout = setTimeout(getData, 3000);
+          } else
+            console.log("error: " + errmsg);
+        }
+        $.ajax({
+          url: "data.js",
+          dataType: "json",
+          timeout: 5000,
+          cache: false,
+          error: onerror,
+          success: function (response) {
+              if (response != null) {
+                //console.log("got data!");
+                data = response;
+                filter();
+                //draw();
+              }
+              fetchtimeout = setTimeout(getData, 600);
+            }
+        });
+      }
+      var fetchtimeout = setTimeout(getData, 100);
+      //setInterval(getData, 1000);
+      //getData();
+      
+      var drawinterval = setInterval(draw, 400);
+      
+      function filter() {
+        var serverid, peerid, server, peer, linkid, lag;
+        
+        data.links = {};
+        data.avglag = 0;
+        var avglagcount = 0;
+        
+        for (serverid in data.servers) {
+          server = data.servers[serverid];
+          if (server.peers[serverid]) {
+            server.lag = server.peers[serverid].lag / 2;
+            delete server.peers[serverid];
+            data.avglag += server.lag;
+            avglagcount++;
+          } else {
+            server.lag = 0;
+          }
+        }
+        data.avglag /= avglagcount;
+        
+        for (serverid in data.servers) {
+          server = data.servers[serverid];
+          for (peerid in data.servers[serverid].peers) {
+            peer = data.servers[peerid];
+            
+            linkid = serverid > peerid ? serverid+peerid : peerid+serverid;
+            lag = server.peers[peerid].lag - server.lag - peer.lag;
+            
+            /*if ( ! (data.links[linkid]
+            && (server.peers[peerid].last < peer.peers[serverid].last
+            || (server.peers[peerid].last == data.time)))) {
+              data.links[linkid] = lag;
+            }*/
+            if (data.links[linkid]) {
+              data.links[linkid] += lag;
+              data.links[linkid] /= 2;
+              /*if (server.peers[peerid].last > peer.peers[serverid].last
+              &&  server.peers[peerid].last < data.time) {
+                data.links[linkid] = lag;
+              }*/
+            } else {
+              data.links[linkid] = lag;
+            }
+            
+            
+          }
+        }
+      }
+      
+      var positions = {};
+      
+      function adjustPos() {
+        for (var serverid in positions) {
+          var pos = positions[serverid];
+          var server = data.servers[serverid];
+          var resx = 0;
+          var resy = 0;
+          
+          /*if (pos.x < 30)
+            resx += Math.sqrt(30-pos.x);
+          if (pos.x > canvas.width - 30)
+            resx -= Math.sqrt(pos.x - canvas.width + 30);
+          if (pos.y < 30)
+            resy += Math.sqrt(30-pos.y);
+          if (pos.y > canvas.height - 30)
+            resy -= Math.sqrt(pos.y - canvas.height + 30);*/
+          
+          if (server.status == "down") resy += 10;
+          if (server.status == "connected" && pos.y > canvas.height - 60)
+            resy -= 0.5;
+          
+          for (var otherid in positions) {
+            if (serverid == otherid) continue;
+            var opos = positions[otherid];
+            var linkid = serverid>otherid ? serverid+otherid : otherid+serverid;
+            var linklag = data.links[linkid];
+            
+            if (pos.x - opos.x > -70 && pos.x - opos.x < 70
+            && pos.y - opos.y > -70 && pos.y - opos.y < 70) {
+              if (pos.x > opos.x) {resx++} else {resx--};
+              if (pos.y > opos.y) {resy++} else {resy--};
+            }
+            
+            //if (server.peers[otherid] && server.peers[otherid].lag > 1) {
+            if (linklag) {
+              //var dist = Math.sqrt(server.peers[otherid].lag) * 15;
+              var dist = Math.sqrt(Math.max(0, linklag)) * 11 + 20;
+              dist = Math.min(dist,Math.min(canvas.width, canvas.height)/2);
+              var scale = dist / 3000;
+              if (pos.x - opos.x > -dist && pos.x - opos.x < dist
+              && pos.y - opos.y > -dist && pos.y - opos.y < dist) {
+                if (pos.x > opos.x) {resx+=scale} else {resx-=scale};
+                if (pos.y > opos.y) {resy+=scale} else {resy-=scale};
+              } else {
+                if (pos.x > opos.x) {resx-=scale} else {resx+=scale};
+                if (pos.y > opos.y) {resy-=scale} else {resy+=scale};
+              }
+            }
+          }
+          
+          positions[serverid].x += resx;
+          positions[serverid].y += resy;
+        }
+        
+        /*for (var serverid in data.servers) {
+          var server = data.servers[serverid];
+          for (var peerid in server.peers) {
+            if (serverid == peerid) continue;
+            var peer = server.peers[peerid];
+            
+            var diffx = positions[serverid].x - positions[peerid].x;
+            var diffy = positions[serverid].y - positions[peerid].y;
+            var distance = Math.sqrt(Math.pow(diffx, 2) + Math.pow(diffy, 2));
+            var shouldbe = Math.sqrt(peer.lag);
+            var scale = (distance - shouldbe) / 1000;
+            
+            positions[serverid].x += diffx * scale;
+            positions[serverid].y += diffy * scale;
+            positions[peerid].x   -= diffx * scale;
+            positions[peerid].y   -= diffy * scale;
+          }
+        }*/
+        
+        // move all points into the viewbox
+        for (var i in positions) {
+          positions[i].x = Math.max(25, Math.min(
+            canvas.width  - 25, positions[i].x));
+          positions[i].y = Math.max(25, Math.min(
+            canvas.height - 25, positions[i].y));
+        }
+      }
+      
+      function draw() {
+        // create new position entries if needed
+        for (var serverid in data.servers) {
+          if (!positions[serverid]) {
+            positions[serverid] = {
+              x: Math.random() * canvas.width,
+              y: Math.random() * canvas.height
+            };
+          }
+        }
+        
+        adjustPos();
+        adjustPos();
+        adjustPos();
+        
+        context.clearRect(0,0,canvas.width,canvas.height);
+        for (var serverid in positions) {
+          var server = data.servers[serverid];
+          var pos = positions[serverid];
+          for (var peerid in server.peers) {
+            var linkid = serverid > peerid ? serverid+peerid : peerid+serverid;
+            var lag = Math.max(0, data.links[linkid]);
+            //var otherpeer = data.servers[peerid].peers[serverid];
+            //if (serverid <= peerid && otherpeer) continue;
+            //var peer = server.peers[peerid];
+            //var lag = peer.lag;
+            //if (otherpeer) lag = (lag + otherpeer.lag) / 2;
+            context.strokeStyle = "hsla(" + Math.max(0, 120 - 120 * 
+              Math.sqrt(lag / 2000)) + ",100%,50%, 0.5)";
+            drawLine(pos.x,pos.y, positions[peerid].x, positions[peerid].y);
+          }
+        }
+        for (var serverid in positions) {
+          var server = data.servers[serverid];
+          var pos = positions[serverid];
+          if (server.status == "connected") {
+            context.fillStyle = "green";
+          } else if (server.status == "down") {
+            context.fillStyle = "red";
+          } else {
+            context.fillStyle = "rgb(255,128,0)";
+          }
+          drawDot(pos.x, pos.y, 10);
+          context.fillStyle = "black";
+          context.textAlign = "center";
+          context.strokeStyle = "rgba(255,255,255,0.6)";
+          context.strokeText(serverid, pos.x, pos.y);
+          context.fillText(serverid, pos.x, pos.y);
+        }
+      }
+
+      function drawDot(x,y,r) {
+        context.beginPath();
+        context.arc(x,y,r,0,Math.PI*2, false);
+        context.fill();
+      }
+      function drawLine(x,y,x2,y2) {
+        context.beginPath();
+        context.moveTo(x,y);
+        context.lineTo(x2,y2);
+        context.stroke();
+      }
+      
+      var dragserver = null;
+      $('#canvas').mousedown(function (e) {
+        for (var id in positions) {
+          var pos = positions[id];
+          
+          if (pos.x - 10 > e.offsetX) continue;
+          if (pos.x + 10 < e.offsetX) continue;
+          if (pos.y - 10 > e.offsetY) continue;
+          if (pos.y + 10 < e.offsetY) continue;
+          
+          dragserver = id;
+        }
+      });
+      $('#canvas').mousemove(function (e) {
+        if (dragserver) {
+          positions[dragserver].x = e.offsetX;
+          positions[dragserver].y = e.offsetY;
+        }
+      });
+      $('#canvas').mouseup(function (e) {
+        dragserver = null;
+      });
+      $('#canvas').mouseleave(function (e) {
+        dragserver = null;
+      });
+    </script>
+  </body>
+</html>
+<!-- vim:set ts=2 sw=2 autoindent et: -->
