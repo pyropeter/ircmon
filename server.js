@@ -75,7 +75,8 @@ function connect(serverid) {
   server.socket.on('error', function (error) {
     if ((error.syscall == "connect" && (error.code == "ECONNREFUSED" ||
     error.code == "ETIMEDOUT" || error.code == "EHOSTUNREACH"))
-    || (/^ENOTFOUND/.test(error.message))) {
+    || (/^ENOTFOUND/.test(error.message))
+    || (error.syscall == "read" && error.code == "ECONNRESET")) {
       util.log("Server down: " + serverid);
       server.status = "down";
     } else {
