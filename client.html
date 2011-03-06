@@ -34,6 +34,14 @@
     </ul>
     Each edge represents the time between dispatch and reception of an irc-message (ircmon sends the message using one of the opened connections and addresses it to another open connection).<br>
     The measured time ("lag") controls both length and color of the edge in question. Edge lengths grow with the lag. The color ranges from green (0ms) over yellow (500ms) to red (2s and above).
+    
+    <h3>See also</h3>
+    <ul>
+      <li><a href="https://github.com/pyropeter/ircmon">
+        The code behind this (on github)</a></li>
+    </ul>
+    
+    
     <script>
       try {
         console;
@@ -44,6 +52,7 @@
       
       var canvas = $('#canvas')[0];
       var context = canvas.getContext('2d');
+      context.lineWidth = 4;
 
       var data = {time: 0, servers: {}};
 
