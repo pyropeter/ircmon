@@ -42,11 +42,11 @@ var settings = {
   },
   prefix: "ircmon_",
   realname: "Blame PyroPeter, https://github.com/pyropeter/ircmon",
-  wait:        1000 *  8,
-  timeout:     1000 *  30,
+  wait:        1000 *   6,
+  timeout:     1000 *  60,
   downtimeout: 1000 * 600,
   pingtimeout: 1000 * 180,
-  conntimeout: 1000 *  20,
+  conntimeout: 1000 *  50,
   maxlag:      1000 * 240
 };
 
@@ -63,7 +63,7 @@ function connect(serverid) {
   if (server.socket)
     server.socket.destroy()
   server.buffer = "";
-  server.error = undefined;
+  server.lasterror = undefined;
   //server.lag = -1;
   server.lastsend = 0;
 
@@ -166,7 +166,12 @@ function connect(serverid) {
   });
   server.send = function (data) {
     //util.log("Send " + serverid + ": " + data);
-    server.socket.write(data + "\r\n");
+    try {
+      server.socket.write(data + "\r\n");
+    } catch (e) {
+      util.log("Error: write() failed: " + serverid);
+      server.lasterror = e;
+    }
     server.lastsend = new Date().getTime() + Math.floor(
       Math.random() * settings.wait / 5);
   };
