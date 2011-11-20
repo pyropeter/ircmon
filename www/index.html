@@ -76,7 +76,7 @@
                 filter();
                 //draw();
               }
-              fetchtimeout = setTimeout(getData, 2000);
+              fetchtimeout = setTimeout(getData, 1000);
             }
         });
       }
@@ -84,7 +84,7 @@
       //setInterval(getData, 1000);
       //getData();
       
-      var drawinterval = setInterval(draw, 500);
+      var drawinterval = setInterval(draw, 100);
       
       function filter() {
         var serverid, peerid, server, peer, linkid, lag;
@@ -153,9 +153,14 @@
           if (pos.y > canvas.height - 30)
             resy -= Math.sqrt(pos.y - canvas.height + 30);*/
           
-          if (server.status == "down") resy += 10;
-          if (server.status == "connected" && pos.y > canvas.height - 60)
-            resy -= 0.5;
+          if (server.status == "down") {
+            resy += 10;
+          } else if (server.status == "connected") {
+            if (pos.y > canvas.height - 60)
+              resy -= 0.5;
+          } else {
+            resx += 5;
+          }
           
           for (var otherid in positions) {
             if (serverid == otherid) continue;
@@ -163,8 +168,8 @@
             var linkid = serverid>otherid ? serverid+otherid : otherid+serverid;
             var linklag = data.links[linkid];
             
-            if (pos.x - opos.x > -70 && pos.x - opos.x < 70
-            && pos.y - opos.y > -70 && pos.y - opos.y < 70) {
+            if (pos.x - opos.x > -50 && pos.x - opos.x < 50
+            && pos.y - opos.y > -50 && pos.y - opos.y < 50) {
               if (pos.x > opos.x) {resx++} else {resx--};
               if (pos.y > opos.y) {resy++} else {resy--};
             }
@@ -185,9 +190,13 @@
               }
             }
           }
-          
-          positions[serverid].x += resx;
-          positions[serverid].y += resy;
+
+          resx = (resx + pos.vx * 2) / 3;
+          resy = (resy + pos.vy * 2) / 3;
+          pos.x += resx;
+          pos.y += resy;
+          pos.vx = resx;
+          pos.vy = resy;
         }
         
         /*for (var serverid in data.servers) {
@@ -224,7 +233,9 @@
           if (!positions[serverid]) {
             positions[serverid] = {
               x: Math.random() * canvas.width,
-              y: Math.random() * canvas.height
+              y: Math.random() * canvas.height,
+              vx: 0,
+              vy: 0,
             };
           }
         }
