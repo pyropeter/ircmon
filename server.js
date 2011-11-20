@@ -44,9 +44,9 @@ var settings = {
   realname: "Blame PyroPeter, https://github.com/pyropeter/ircmon",
   wait:        1000 *   6,
   timeout:     1000 *  60,
-  downtimeout: 1000 * 600,
+  downtimeout: 1000 * 300,
   pingtimeout: 1000 * 180,
-  conntimeout: 1000 *  50,
+  conntimeout: 1000 *  30,
   maxlag:      1000 * 240
 };
 
