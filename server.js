@@ -6,24 +6,26 @@ var crypto = require('crypto');
 var fs = require('fs');
 var path = require('path');
 
+// NOTE: some of the servers are disabled to avoid running into the
+// "Too many connections for $host (global)" error
 var settings = {
   servers: {
     // === ap
     roddenberry: {host: 'roddenberry.freenode.net'},
     
     // === eu
-    kornbluth: {host: 'kornbluth.freenode.net'},
+//    kornbluth: {host: 'kornbluth.freenode.net'},
     orwell: {host: 'orwell.freenode.net'}, // not linked
-    calvino: {host: 'calvino.freenode.net'},
-    gibson: {host: 'gibson.freenode.net'}, // not linked
-    leguin: {host: 'leguin.freenode.net'},
+//    calvino: {host: 'calvino.freenode.net'},
+//    gibson: {host: 'gibson.freenode.net'}, // not linked
+//    leguin: {host: 'leguin.freenode.net'},
     lem: {host: 'lem.freenode.net'}, // not linked
     wolfe: {host: 'wolfe.freenode.net'}, // not linked
     sendak: {host: 'sendak.freenode.net'},
     jordan: {host: 'jordan.freenode.net'},
     lindbohm: {host: 'lindbohm.freenode.net'},
-    holmes: {host: 'holmes.freenode.net'},
-    barjavel: {host: 'barjavel.freenode.net'},
+//    holmes: {host: 'holmes.freenode.net'},
+//    barjavel: {host: 'barjavel.freenode.net'},
     bartol: {host: 'bartol.freenode.net'},
     pratchett: {host: 'pratchett.freenode.net'},
     hitchcock: {host: 'hitchcock.freenode.net'},
@@ -60,6 +62,8 @@ function connect(serverid) {
   if (!server.nick) server.nick = settings.prefix + serverid;
   if (!server.cred) server.cred = String(Math.random());
   if (!server.peers) server.peers = {};
+  if (typeof server.hasIpv6 == "undefined") server.hasIpv6 = false;
+  if (typeof server.useIpv6 == "undefined") server.useIpv6 = true;
 
   if (server.socket)
     server.socket.destroy()
@@ -77,8 +81,16 @@ function connect(serverid) {
     if (error.code == "ECONNREFUSED" || error.code == "ETIMEDOUT"
      || error.code == "EHOSTUNREACH" || error.code == "ENOTFOUND"
      || error.code == "ECONNRESET") {
-      util.log("Server down: " + serverid);
-      server.status = "down";
+      if (server.hasIpv6) {
+        util.log("Server down6: " + serverid);
+        server.useIpv6 = false;
+        server.peers = {};
+        connect(serverid);
+      } else {
+        util.log("Server down: " + serverid);
+        server.useIpv6 = true;
+        server.status = "down";
+      }
     } else {
       util.log("ERROR: " + serverid);
       console.log(error);
@@ -182,19 +194,26 @@ function connect(serverid) {
       server.socket.end();
     }
   }, settings.conntimeout);
-  dns.resolve6(server.host, function (err, addrs) {
-    if (err) {
-      dns.resolve4(server.host, function (err, addrs) {
-        if (err) {
-          server.socket.emit("error", err);
-        } else {
-          server.socket.connect(server.port, addrs[0]);
-        }
-      });
-    } else {
-      server.socket.connect(server.port, addrs[0]);
-    }
-  });
+
+  if (server.useIpv6) {
+    dns.resolve6(server.host, function (err, addrs) {
+      if (err) {
+        dns.resolve4(server.host, function (err, addrs) {
+          if (err) {
+            server.socket.emit("error", err);
+          } else {
+            server.socket.connect(server.port, addrs[0]);
+          }
+        });
+      } else {
+        server.hasIpv6 = true;
+        server.socket.connect(server.port, addrs[0]);
+      }
+    });
+  } else {
+    server.hasIpv6 = false;
+    server.socket.connect(server.port, server.host);
+  }
 }
 
 function servePeers(serverid) {
