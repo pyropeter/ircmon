@@ -1,6 +1,7 @@
 var util = require('util');
 var repl = require('repl');
 var net = require('net');
+var dns = require('dns');
 var crypto = require('crypto');
 var fs = require('fs');
 var path = require('path');
@@ -73,10 +74,9 @@ function connect(serverid) {
     server.send("USER ircmonitor * * :" + settings.realname);
   });
   server.socket.on('error', function (error) {
-    if ((error.syscall == "connect" && (error.code == "ECONNREFUSED" ||
-    error.code == "ETIMEDOUT" || error.code == "EHOSTUNREACH"))
-    || (/^ENOTFOUND/.test(error.message))
-    || (error.syscall == "read" && error.code == "ECONNRESET")) {
+    if (error.code == "ECONNREFUSED" || error.code == "ETIMEDOUT"
+     || error.code == "EHOSTUNREACH" || error.code == "ENOTFOUND"
+     || error.code == "ECONNRESET") {
       util.log("Server down: " + serverid);
       server.status = "down";
     } else {
@@ -182,7 +182,19 @@ function connect(serverid) {
       server.socket.end();
     }
   }, settings.conntimeout);
-  server.socket.connect(server.port, server.host);
+  dns.resolve6(server.host, function (err, addrs) {
+    if (err) {
+      dns.resolve4(server.host, function (err, addrs) {
+        if (err) {
+          server.socket.emit("error", err);
+        } else {
+          server.socket.connect(server.port, addrs[0]);
+        }
+      });
+    } else {
+      server.socket.connect(server.port, addrs[0]);
+    }
+  });
 }
 
 function servePeers(serverid) {
