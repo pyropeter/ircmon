@@ -26,15 +26,29 @@
       You dont can haz canvas!
     </canvas>
     <h3>Legend</h3>
+    <h5>Circles / IRC servers</h5>
     Each circle corresponds to one of freenode's IRCds.
     <ul>
       <li><em>Green:</em> ircmon is currently connected to that server</li>
-      <li><em>Yellow:</em> ircmon tries to establish a connection to that server or an error or timeout occured (reconnection will happen soon).</li>
-      <li><em>Red:</em> the server seems to be down (no DNS-entry, not route, connection refused, connect() times out)</li>
+      <li><em>Yellow:</em> ircmon tries to establish a connection to that
+          server or an error or timeout occured (reconnection will happen
+          soon).</li>
+      <li><em>Red:</em> the server seems to be down (no DNS-entry, not route,
+          connection refused, connect() times out)</li>
     </ul>
-    Each edge represents the time between dispatch and reception of an irc-message (ircmon sends the message using one of the opened connections and addresses it to another open connection).<br>
-    The measured time ("lag") controls both length and color of the edge in question. Edge lengths grow with the lag. The color ranges from green (0ms) over yellow (500ms) to red (2s and above).
-    
+    <h5>Edges / Message delay</h5>
+    Each edge represents the time between dispatch and reception of an IRC
+    message (ircmon sends the message using one of the opened connections
+    and addresses it to another open connection). Half of each server
+    connection's RTT is subtracted, so only the server-to-server delay is
+    displayed.<br>
+    The measured time ("delay") controls both length and color of the edge in
+    question. Edge length grows with increasing delay.
+    <ul>
+      <li><em>Green: </em>0ms</li>
+      <li><em>Yellow: </em>500ms</li>
+      <li><em>Red: </em>2s</li>
+    </ul>
     <h3>See also</h3>
     <ul>
       <li><a href="https://github.com/pyropeter/ircmon">
